@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>银行家算法</title>
+<!--    <script src="eCharts.js"></script>-->
+    <link rel="stylesheet" href="index.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        input {
+            margin-bottom: 20px;
+            margin-left: 5px;
+            margin-top: 10px;
+        }
+        .resourceMaxInput input {
+            width: 20%;
+        }
+        .processNameInput, .resourceNameInput, .resourceNumInput, .processNumInput, .processAllocatedInput {
+            width: 20%;
+        }
+        .maxNeed, .allocated {
+            width: 10%;
+        }
+        .see {
+            position: absolute;
+            top: 7%;
+            right: 50%;
+        }
+        .safeButton {
+            position: absolute;
+            top: 15%;
+            right: 50%;
+        }
+        .apply {
+            position: absolute;
+            top: 23%;
+            right: 50%;
+        }
+        .reset {
+            position: absolute;
+            top: 31%;
+            right: 50%;
+        }
+        h2 {
+            font-weight: bold;
+            text-align: left;
+            width:100%; display:block; line-height:1.5em; overflow:visible; text-shadow:#f3f3f3 1px 1px 0px, #b2b2b2 1px 2px 0;
+            font-size: 200%;
+            margin-bottom: 20px;
+        }
+        #safeMain {
+            width: 600px;
+            height: 200px;
+            position: absolute;
+            top: 60%;
+            right: 5%;
+        }
+        #applyDialog {
+            /*width: 600px;*/
+            /*height: 200px;*/
+            position: absolute;
+            top: 5%;
+            right: 10%;
+        }
+        #replyToApply {
+            position: absolute;
+            top: 15%;
+            right: 10%;
+        }
+        #unsafe {
+            width: 600px;
+            height: 200px;
+            position: absolute;
+            top: 30%;
+            right: 5%;
+        }
+        #nextButton {
+            position: absolute;
+            top: 60%;
+            right: 5%;
+        }
+        #tips {
+            position: absolute;
+            right: 40%;
+            bottom: 5%;
+            width: 200px;
+            height: 100px;
+        }
+        /*.isSafe {*/
+        /*    position: absolute;*/
+        /*    top: 23%;*/
+        /*    right: 40%;*/
+        /*}*/
+        /*.main {*/
+        /*    float: right*/
+        /* }*/
+    </style>
+</head>
+<body>
+<h2>银行家算法</h2>
+<div id="app">
+    <span>请输入资源名:</span><el-input placeholder="请输入资源名，以英文逗号分割" v-model="resourceName" class="resourceNameInput"></el-input><br>
+    <span>依次输入资源总数:</span><el-input placeholder="依次输入资源总数，以英文逗号分割" v-model="resourceNum" class="resourceNumInput"></el-input><br>
+    <span>请输入进程名:</span><el-input placeholder="请输入进程名，以英文逗号分割" v-model="processName" class="processNameInput"></el-input><br>
+    <span>依次输入进程需要最大资源:</span><br>
+    <span v-for="(item, index) in processList">
+        {{item.name}}<el-input class="maxNeed" placeholder="以英文逗号分割" v-model="processList[index].total" size="mini"></el-input>
+    </span>
+    <br>
+    <span>依次输入进程已分配资源:</span>
+    <br>
+    <span v-for="(item, index) in processList">
+        {{item.name}}<el-input class="allocated" placeholder="以英文逗号分割" v-model="processList[index].allocated" size="mini"></el-input>
+    </span>
+    <div class="main" v-if="mainSeen">
+        <el-table
+                :data="resourceList"
+                stripe
+                style="width: 40%">
+            <el-table-column
+                    prop="name"
+                    label="资源名"
+                    width="180">
+            </el-table-column>
+            <el-table-column
+                    prop="total"
+                    label="总数"
+                    width="180">
+            </el-table-column>
+            <el-table-column
+                    prop="remain"
+                    label="剩余"
+                    width="180">
+            </el-table-column>
+        </el-table>
+        <el-table
+                :data="processList"
+                stripe
+                style="width: 40%">
+            <el-table-column
+                    prop="name"
+                    label="进程名"
+                    width="180">
+            </el-table-column>
+            <el-table-column
+                    prop="total"
+                    label="最大需求"
+                    width="180">
+            </el-table-column>
+            <el-table-column
+                    prop="allocated"
+                    label="已分配">
+            </el-table-column>
+            <el-table-column
+                    prop="need"
+                    label="还需要">
+            </el-table-column>
+        </el-table>
+    </div>
+    <el-col>
+        <el-button type="primary" @click="show($event)" class="see">查看</el-button>
+        <el-button type="primary" class="apply" @click="apply()">申请</el-button>
+        <el-button type="primary" class="safeButton" @click="getSequence()">判断当前是否安全</el-button>
+        <el-button type="primary" class="reset" @click="reset()">重置</el-button>
+    </el-col>
+    <div id="safeMain" v-show="graphShow">
+    </div>
+    <div id="unsafe" v-if="unsafe">
+        无安全序列
+    </div>
+    <div id="nextButton" v-if="safe">
+        <el-button type="primary" @click="getNext()">下一个</el-button>
+    </div>
+    <div id="tips">
+        <p>tips:每次在输入框更改或者申请之后需要点一下查看按钮更改才会生效</p>
+    </div>
+    <div id="applyDialog" v-show="dialog">
+        <el-select v-model="selected" placeholder="请选择要申请的进程资源">
+            <el-option
+                    v-for="item in processList"
+                    :label="item.name"
+                    :key="item.name"
+                    :value="item.name"
+                    :selected="item.name">
+            </el-option>
+        </el-select>
+        <br>
+        <el-input placeholder="依次输入需要分配的资源,以英文逗号分割" v-model="newApply" class="newApplyInput"></el-input>
+        <br>
+        <el-button type="primary" class="applyButton" @click="certainApply()">确定</el-button>
+    </div>
+    <div id="replyToApply">
+        <p v-show="replyTrue">分配成功</p>
+        <p v-show="replyFalse">{{replyMessage}}</p>
+    </div>
+</div>
+<script src="vue.js"></script>
+<!--<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>-->
+<script src="index.js"></script>
+<script src="https://cdn.bootcss.com/echarts/4.1.0.rc2/echarts.min.js"></script>
+<script>
+    class resource {
+        constructor(name, total, remain) {
+            this.name = name ? name : '';
+            this.total = total ? total: 0;
+            this.remain = remain ? remain: 0;
+        }
+    }
+    class process {
+        constructor(name, total, allocated, need, apply) {
+            this.name = name ? name : '';
+            this.total = total ? total : '';
+            this.allocated = allocated ? allocated : '';
+            this.need = need ? need : '';
+            this.apply = apply ? apply : '';
+        }
+    }
+    class node {
+        constructor(name, x, y) {
+            this.name = name;
+            this.x = x;
+            this.y = y;
+        }
+
+    }
+    const app = new Vue({
+        el: '#app',
+        data: function () {
+            return {
+                mainSeen: false,
+                resourceList: [],
+                processList: [],
+                processName: '',
+                resourceName: '',
+                resourceNum: '',
+                processNum: '',
+                processAllocated: '',
+                safe: false,
+                safeSequence: [],
+                safeDataItem: [
+                ],
+                links: [],
+                safeData: [
+
+                ],
+                unsafe: false,
+                flag: 0,
+                clickNum: 0,
+                graphShow: true,
+                dialog: false,
+                selected: '',
+                newApply: '',
+                replyTrue: false,
+                replyFalse: false,
+                replyMessage: ''
+            }
+        },
+        watch: {
+            resourceName: function(val) {
+                let resourceNameNew = val.split(',');
+                let now = [];
+                for(let i = 0; i < resourceNameNew.length; i++) {
+                    let item = new resource(resourceNameNew[i]);
+                    now.push(item);
+                };
+                this.resourceList = now;
+            },
+            resourceNum: function(val) {
+                let resourceNumNew = val.split(',');
+                for(let i = 0; i < resourceNumNew.length; i++) {
+                    this.resourceList[i].total = Number(resourceNumNew[i]);
+                }
+            },
+            processName: function(val) {
+                let processNameNew = val.split(',');
+                let now = [];
+                for(let i = 0; i < processNameNew.length; i++) {
+                    let item = new process(processNameNew[i]);
+                    now.push(item);
+                };
+                this.processList = now;
+            },
+            processNum: function(val) {
+                let processNumNew = val.split(',');
+                for(let i = 0; i < processNumNew.length; i++) {
+                    this.processList[i].total = Number(processNumNew[i]);
+                }
+            },
+            processAllocated: function(val) {
+                let processAllocatedNew = val.split(',');
+                for(let i = 0; i < processAllocatedNew.length; i++) {
+                    this.processList[i].allocated = Number(processAllocatedNew[i]);
+                }
+            }
+        },
+        methods: {
+            test: function() {
+            },
+            change: function (a, b) {
+            },
+            getNext: function() {
+                console.log(1);
+                let len = this.safeSequence.length;
+                this.safeDataItem = this.safeData[(this.clickNum + 1) % len];
+                this.clickNum += 1;
+                this.showGraph();
+            },
+            reset: function() {
+                this.replyMessage = '',
+                this.replyFalse = false,
+                this.replyTrue = false,
+                this.newApply = '',
+                this.selected = '',
+                this.dialog = false,
+                this.dialog = false,
+                this.mainSeen = false,
+                this.resourceList = [],
+                this.processList = [],
+                this.processName = '',
+                this.resourceName = '',
+                this.resourceNum = '',
+                this.processNum = '',
+                this.processAllocated = '',
+                this.safe = false,
+                this.safeSequence = [],
+                this.safeDataItem = [],
+                this.links = [],
+                this.safeData = [],
+                this.unsafe = false,
+                this.flag = 0,
+                this.clickNum = 0,
+                this.graphShow = true
+            },
+            generateGraph: function(){
+                let data = [];
+                let originX = 300;
+                let originY = 300;
+                console.log(this.safeSequence.length);
+                if(this.safeSequence.length != 0) {
+                    for(let i = 0; i < this.safeSequence.length; i++) {
+                        let now = this.safeSequence[i];
+                        let arr = [];
+                        for(let j = 0; j < now.length; j++) {
+                            let n = new node(this.processList[now[j]].name);
+                            n.x = originX;
+                            n.y = originY;
+                            originX += 300;
+                            arr.push(n);
+                        }
+                        this.safeData.push(arr);
+                        originX = 300;
+                    }
+                }
+            },
+            apply: function() {
+                this.dialog = true;
+                this.replyTrue = false;
+                this.replyFalse = false;
+            },
+            certainApply: function() {
+                // console.log(this.selected);
+                // console.log(this.newApply);
+                this.dialog = false;
+                let len = this.processList.length;
+                let lenR = this.resourceList.length;
+                let nowApply = this.newApply.split(',');
+                let arr = this.processList;
+                let arrR = this.resourceList;
+                let allocated = [];
+                let need = [];
+                let total = [];
+                let safe = [];
+                let available = [];
+                for(let i = 0; i < len; i++) {
+                    allocated.push(arr[i].allocated.split(','));
+                    need.push(arr[i].need.split(','));
+                    total.push( arr[i].total.split(','));
+                }
+                for(let i = 0; i < len; i++) {
+                    for(let j = 0; j < lenR; j++) {
+                        allocated[i][j] = Number(allocated[i][j]);
+                        need[i][j] = Number(need[i][j]);
+                        total[i][j] = Number(total[i][j]);
+                    }
+                }
+                for(let i = 0; i < lenR; i++) {
+                    available.push(this.resourceList[i].remain);
+                }
+                let now = 0;
+                for(let i = 0; i < this.processList.length; i++) {
+                    if(this.processList[i].name == this.selected) {
+                        now = i;
+                        break;
+                    }
+                }
+                let flag1 = 1;
+                let flag2 = 1;
+                for(let i = 0; i < lenR; i++) {
+                    if(nowApply[i] > need[now][i]) {
+                        flag1 = 0;
+                    }
+                }
+                for(let i = 0; i < lenR; i++) {
+                    if(nowApply[i] > available[i]) {
+                        flag1 = 0;
+                    }
+                }
+                if(flag1 && flag2) {
+                    let str = '';
+                    let allocated = this.processList[now].allocated.split(',');
+                    for(let i = 0; i < lenR; i++) {
+                        let num = Number(nowApply[i]) + Number(allocated[i]);
+                        str += num;
+                        if(i != lenR - 1) {
+                            str += ',';
+                        }
+                    }
+                    console.log(now);
+                    console.log(str);
+                    this.processList[now].allocated = str;
+                    let allo = this.processList[now].allocated.split(',');
+                    let maxNeed = this.processList[now].total.split(',');
+                    let flag2 = true;
+                    for(let i = 0; i < lenR; i++) {
+                        if(Number(allo[i]) != Number(maxNeed[i])) {
+                            flag2 = false;
+                        }
+                    }
+                    if(flag2) {
+                        this.processList.splice(now, 1);
+                    }
+                    this.replyTrue = true;
+                }
+                else if(flag1) {
+                    this.replyFalse = true;
+                    this.replyMessage = '申请资源大于需要资源';
+                }else {
+                    this.replyFalse = true;
+                    this.replyMessage = '可用资源不足';
+                }
+            },
+            isAvailable: function(id, allocated, max, need, available) {
+                let flag = true;
+                let len = this.resourceList.length;
+                for(let i = 0; i < len; i++) {
+                    if(need[id][i] > available[i]) {
+                        flag = false;
+                    }
+                }
+                return flag;
+            },
+            showGraph: function() {
+                // console.log('zzb');
+                var chartDom = document.querySelector('#safeMain');
+                console.log(chartDom);
+                var myChart = echarts.init(chartDom);
+                var option;
+                let now = this.safeDataItem;
+                // console.log(now);
+                for(let i = 0; i < now.length - 1; i++) {
+                    this.links.push({source: now[i].name, target: now[i + 1].name});
+                }
+                // console.log(this.links);
+                let serialNum = this.clickNum % (this.safeData.length) + 1;
+                console.log(serialNum);
+                option = {
+                    title: {
+                        text: '总共有' + this.safeSequence.length + '个安全序列，' + '当前是第' + serialNum + '个'
+                    },
+                    tooltip: {},
+                    animationDurationUpdate: 1500,
+                    animationEasingUpdate: 'quinticInOut',
+                    series: [
+                        {
+                            type: 'graph',
+                            layout: 'none',
+                            symbolSize: 50,
+                            roam: true,
+                            label: {
+                                show: true
+                            },
+                            edgeSymbol: ['circle', 'arrow'],
+                            edgeSymbolSize: [4, 10],
+                            edgeLabel: {
+                                fontSize: 20
+                            },
+                            data: this.safeDataItem,
+                            links: this.links,
+                            lineStyle: {
+                                opacity: 0.9,
+                                width: 2,
+                                curveness: 0
+                            }
+                        }
+                    ]
+                };
+                option && myChart.setOption(option);
+                this.links = [];
+            },
+            getSequence: function() {
+                // if(this.flag == 0) {
+                    let marked = [];
+                    for(let i = 0; i < this.processList.length; i++) {
+                        marked.push(false);
+                    }
+                    let len = this.processList.length;
+                    let lenR = this.resourceList.length;
+                    let flag = new Array(len);
+                    for(let i = 0; i < len; i++) {
+                        flag[i] = 0;
+                    }
+                    let arr = this.processList;
+                    let arrR = this.resourceList;
+                    let allocated = [];
+                    let need = [];
+                    let total = [];
+                    let safe = [];
+                    let available = [];
+                    for(let i = 0; i < len; i++) {
+                        allocated.push(arr[i].allocated.split(','));
+                        need.push(arr[i].need.split(','));
+                        total.push( arr[i].total.split(','));
+                    }
+                    for(let i = 0; i < len; i++) {
+                        for(let j = 0; j < lenR; j++) {
+                            allocated[i][j] = Number(allocated[i][j]);
+                            need[i][j] = Number(need[i][j]);
+                            total[i][j] = Number(total[i][j]);
+                        }
+                    }
+                    for(let i = 0; i < lenR; i++) {
+                        available.push(this.resourceList[i].remain);
+                    }
+                    if(this.flag == 0) {
+                        this.findSafe(marked, allocated, total, need, available, safe);
+                    }
+                    // console.log(1);
+                    if(this.safeSequence[0].length == 0) {
+                        this.unsafe = true;
+                        this.safe = false;
+                    }else {
+                        this.safe = true;
+                        this.unsafe = false;
+                        if(this.flag == 0) {
+                            this.generateGraph();
+                        }
+                        this.safeDataItem = this.safeData[0];
+                    }
+                // }
+                this.flag++;
+                if(event.currentTarget.innerHTML.indexOf('安全') > 0) {
+                    if(this.safeSequence[0].length != 0) {
+                        console.log('iris');
+                        this.safe = true;
+                        this.graphShow = true;
+                    }
+                    if(this.safe)  {
+                        this.showGraph();
+                    }
+                    console.log('安全');
+                    event.currentTarget.innerHTML = '隐藏';
+                }else {
+                    this.clickNum = 0;
+                    // this.safeData = [];
+                    // this.safeSequence = [];
+                    this.unsafe = false;
+                    this.safe = false;
+                    this.graphShow = false;
+                    event.currentTarget.innerHTML = '判断当前是否安全';
+                    // console.log('隐藏');
+                }
+                // console.log(this.safeData);
+                // console.log(this.safeSequence);
+            },
+            findSafe: function(marked, allocated, max, need, available, safe) {
+                let len = this.processList.length;
+                let lenR = this.resourceList.length;
+                for(let i = 0; i < len; i++) {
+                    if(!marked[i] && this.isAvailable(i, allocated, max, need, available)) {
+                        marked[i] = true;
+                        for(let j = 0; j < lenR; j++) {
+                            available[j] += allocated[i][j];
+                        }
+                        safe.push(i);
+                        this.findSafe(marked, allocated, max, need, available, safe);
+                        safe.pop();
+                        marked[i] = false;
+                        for(let j = 0; j < lenR; j++) {
+                            available[j] -= allocated[i][j];
+                        }
+                    }
+                }
+                if(safe.length == len) {
+                    let arr = [];
+                    for(let i = 0; i < len; i++) {
+                        arr.push(safe[i]);
+                    }
+                    this.safeSequence.push(arr);
+                }
+            },
+            show: function (event) {
+                for(let i = 0; i < this.processList.length; i++) {
+                    let tmp = '';
+                    let arr1 = this.processList[i].total.split(',');
+                    let arr2 = this.processList[i].allocated.split(',');
+                    for(let j = 0; j < arr1.length; j++) {
+                        tmp += arr1[j] - arr2[j];
+                        if(j != arr1.length - 1) {
+                            tmp += ','
+                        }
+                    }
+                    this.processList[i].need = tmp;
+                }
+                let arr = [];
+                for(let i = 0; i < this.processList.length; i++) {
+                    let arr2 = this.processList[i].allocated.split(',');
+                    arr.push(arr2);
+                }
+                for(let j = 0; j < arr[0].length; j++) {
+                    let tmp = 0;
+                    for(let i = 0; i < arr.length; i++) {
+                        tmp += Number(arr[i][j]);
+                    }
+                    this.resourceList[j].remain = this.resourceList[j].total - tmp;
+                }
+                this.mainSeen = !this.mainSeen;
+                if(event.currentTarget.innerHTML.indexOf('查看') > 0) {
+                    event.currentTarget.innerHTML = '隐藏';
+                }else {
+                    event.currentTarget.innerHTML = '查看';
+                }
+            }
+        }
+    })
+</script>
+</body>
+</html>

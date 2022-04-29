@@ -1,0 +1,103 @@
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <title>Document</title>-->
+<!--    <style>-->
+<!--        h1 {-->
+<!--            text-align: center;-->
+<!--        }-->
+<!--        li {-->
+<!--            list-style: none;-->
+<!--        }-->
+<!--        a {-->
+<!--            text-decoration: none;-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--&lt;!&ndash;写个主界面，可能会好看一点吧&ndash;&gt;-->
+<!--<h1>操作系统实验</h1>-->
+<!--<h3>实验一、进程调度实验</h3>-->
+<!--<ul>-->
+<!--    <a href="最高优先数优先.html"><li>最高优先数优先</li></a>-->
+<!--    <a href=""><li>简单轮转法</li></a>-->
+<!--</ul>-->
+<!--</body>-->
+<!--</html>-->
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>操作系统实验</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            font-weight: bold;
+            text-align: center;
+            width:100%; display:block; line-height:1.5em; overflow:visible; text-shadow:#f3f3f3 1px 1px 0px, #b2b2b2 1px 2px 0;
+            font-size: 200%;
+        }
+        nav {
+            margin: 50px;
+        }
+        ul {
+            overflow: auto;
+            list-style-type: none;
+        }
+        li {
+            height: 25px;
+            float: left;
+            margin-right: 0px;
+            border-right: 1px solid #aaa;
+            padding: 0 20px;
+        }
+        li:last-child {
+            border-right: none;
+        }
+        li a {
+            text-decoration: none;
+            color: #ccc;
+            font: 25px/1 Helvetica, Verdana, sans-serif;
+            text-transform: uppercase;
+
+            -webkit-transition: all 0.5s ease;
+            -moz-transition: all 0.5s ease;
+            -o-transition: all 0.5s ease;
+            -ms-transition: all 0.5s ease;
+            transition: all 0.5s ease;
+        }
+        li a:hover {
+            color: #666;
+        }
+        li.active a {
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+<h1>操作系统实验</h1>
+<nav>
+    <ul>
+        <li class="active"><a href="#">一、进程调度实验:</a></a></li>
+        <li><a href="最高优先数优先.html">静态优先数优先</a></li>
+        <li><a href="简单轮转法.html">简单轮转法</a></li>
+    </ul>
+    <br>
+    <br>
+    <br>
+    <ul>
+        <li class="active"><a href="#">二、作业调度实验:</a></a></li>
+        <li><a href="最高优先数优先.html">单道处理系统作业等待模拟</a></li>
+        <li><a href="简单轮转法.html">多道处理系统作业等待模拟</a></li>
+    </ul>
+</nav>
+</body>
+</html>

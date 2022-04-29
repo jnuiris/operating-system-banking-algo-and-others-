@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <link rel="stylesheet" href="//brick.a.ssl.fastly.net/Roboto:400"/>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+        #run {
+            position: absolute;
+            right: 20%;
+            bottom: 20%;
+        }
+        li {
+            list-style: none;
+        }
+        input {
+            margin-right: 20px;
+            outline-style: none;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            padding: 5px 5px;
+            width: 100px;
+            font-size: 24px;
+            font-family: "Microsoft soft";
+        }
+        input:focus{
+            border-color: #66afe9;
+            outline: 0;
+            -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075),0 0 8px rgba(102,175,233,.6);
+            box-shadow: inset 0 1px 1px rgba(0,0,0,.075),0 0 8px rgba(102,175,233,.6)
+        }
+        div {
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-weight: bold;
+            text-align: center;
+            width:100%; display:block; line-height:1.5em; overflow:visible; text-shadow:#f3f3f3 1px 1px 0px, #b2b2b2 1px 2px 0;
+            font-size: 200%;
+        }
+        a {
+            position: relative;
+            display: inline-block;
+            padding: 1.2em 2em;
+            text-decoration: none;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+            color: white;
+        &::before {
+             content: '';
+             position: absolute;
+             top: 0;
+             left: 0;
+             bottom: 0;
+             right: 0;
+             background: linear-gradient(135deg, #6e8efb, #a777e3);
+             border-radius: 4px;
+             transition: box-shadow .5s ease, transform .2s ease;
+             will-change: transform;
+             box-shadow: 0 2px 5px rgba(0, 0, 0, .2);
+             transform:
+                     translateY(var(--ty, 0))
+                     rotateX(var(--rx, 0))
+                     rotateY(var(--ry, 0))
+                     translateZ(var(--tz, -12px));
+         }
+        &:hover::before {
+             box-shadow: 0 5px 15px rgba(0, 0, 0, .3);
+         }
+        &::after {
+             position: relative;
+             display: inline-block;
+             content: attr(data-title);
+             transition: transform .2s ease;
+             font-weight: bold;
+             letter-spacing: .01em;
+             will-change: transform;
+             transform:
+                     translateY(var(--ty, 0))
+                     rotateX(var(--rx, 0))
+                     rotateY(var(--ry, 0));
+         }
+        }
+        /*body {*/
+        /*    display: flex;*/
+        /*    align-items: center;*/
+        /*    justify-content: center;*/
+        /*    height: 100vh;*/
+        /*    transform-style: preserve-3d;*/
+        /*    transform: perspective(800px);*/
+        /*}*/
+        /*#run {*/
+        /*    flex: 1 1 auto;*/
+        /*    margin: 10px;*/
+        /*    padding: 20px;*/
+        /*    border: 2px solid #f7f7f7;*/
+        /*    text-align: center;*/
+        /*    text-transform: uppercase;*/
+        /*    position: relative;*/
+        /*    overflow:hidden;*/
+        /*    transition: .3s;*/
+        /*}*/
+        #runButton {
+            width: 130px;
+            height: 40px;
+            background: linear-gradient(to bottom, #4eb5e5 0%,#389ed5 100%); /* W3C */
+            border: none;
+            border-radius: 5px;
+            position: relative;
+            border-bottom: 4px solid #2b8bc6;
+            color: #fbfbfb;
+            font-weight: 600;
+            font-family: 'Open Sans', sans-serif;
+            text-shadow: 1px 1px 1px rgba(0,0,0,.4);
+            font-size: 15px;
+            text-align: left;
+            text-indent: 5px;
+            box-shadow: 0px 3px 0px 0px rgba(0,0,0,.2);
+            cursor: pointer;
+
+            /* Just for presentation */
+            display: block;
+            margin: 0 auto;
+            margin-bottom: 20px;
+        }
+        #runButton:active {
+            box-shadow: 0px 2px 0px 0px rgba(0,0,0,.2);
+            top: 1px;
+        }
+
+        #runButton:after {
+            content: "";
+            width: 0;
+            height: 0;
+            display: block;
+            border-top: 20px solid #187dbc;
+            border-bottom: 20px solid #187dbc;
+            border-left: 16px solid transparent;
+            border-right: 20px solid #187dbc;
+            position: absolute;
+            opacity: 0.6;
+            right: 0;
+            top: 0;
+            border-radius: 0 5px 5px 0;
+        }
+    </style>
+</head>
+<body>
+<h1>静态优先数优先</h1>
+<div>
+    <ul>
+        <li>
+            <p>
+                输入进程个数:<input type="text" id="threadNum">
+            </p>
+            <ul id="threadInput">
+            </ul>
+        </li>
+    </ul>
+</div>
+<!--正在运行进程-->
+<div id="running">
+    <table align="center" border="1" bordercolor="#ffcc99" cellpadding="3" width="550" height="180" id="tableRunning">
+        <caption><strong>正在运行进程</strong></caption>
+        <thead bgcolor="#ff0000" align="center" valign="middle">
+        <tr>
+            <th>名称</th>
+            <th>状态</th>
+            <th>优先级</th>
+            <th>需要时间</th>
+            <th>运行时间</th>
+        </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+<!--就绪队列进程-->
+<div>
+    <table align="center" border="1" bordercolor="#ffcc99" cellpadding="3" width="550" height="180" id="tableWaiting">
+        <caption><strong>就绪队列进程</strong></caption>
+        <thead bgcolor="#ff0000" align="center" valign="middle">
+        <tr>
+            <th>名称</th>
+            <th>状态</th>
+            <th>优先级</th>
+            <th>需要时间</th>
+            <th>运行时间</th>
+        </tr>
+        </thead>
+        <tbody>
+
+        </tbody>
+    </table>
+</div>
+<!--运行按钮-->
+<div id="run">
+    <button id="runButton"><p>运行一个时间片</p></button>
+</div>
+<!--<div id="run">-->
+<!--    <a href="#" data-title="运行一个时间片" id="runButton">呵呵</a>-->
+<!--</div>-->
+<script src="jquery.js"></script>
+<script>
+    let threadNum = $('#threadNum');
+    let threadInput = $('#threadInput');
+    threadNum.bind("keypress",function(event){
+        let num = threadNum.val();
+        for(let i = 0; i < num; i++) {
+            // console.log(num);
+            if(event.keyCode == '13') {
+                threadInput.append(`<li>输入进程名:<input type="text" class="name">
+输入进程优先级:<input type="text" class="priority">
+输入进程运行时间:<input type="text" class="time">
+</li>`);
+            }
+        }
+        // 存储进程的数组
+        let arr = [];
+        // 进程类
+        class Thread {
+            constructor(name, priority, time, state, runtime) {
+                this.name = name;
+                this.priority = priority;
+                this.time = time;
+                this.state = state ? state : 'Waiting';
+                this.runtime = 0;
+            }
+        }
+        // 进程类
+        // class Thread {
+        //     //  进程名、到达时间、服务时间、完成时间、周转时间、带权周转时间
+        //     constructor(name, priority, time, finishTime, turnTime, turnTimeW) {
+        //         this.name = name;
+        //         this.priority = priority;
+        //         this.time = time;
+        //         this.finishTime = finishTime ? finishTime : 0;
+        //         this.turnTime = turnTime ? turnTime : 0;
+        //         this.turnTimeW = turnTimeW : turnTimeW : 0;
+        //     }
+        // }
+        let threadLi = threadInput.children('li');
+        // children.each(function(idx, val){
+        //     $(this).css('left',idx*120+'px');
+        // });
+        //  计数器，计算什么时候arr可以用了
+        let count = 0;
+        threadLi.each(function (idx, val) {
+            let name = null;
+            let priority = 0;
+            let time = 0;
+            // console.log($(this));
+            let currentInput = $(this).children('input');
+            // 暂时存储input内容的容器
+            let tmp = [];
+            // let threadNow = new Thread('', 0, 0);
+            currentInput.each(function (idx, val) {
+                // console.log(1);
+                $(this).bind('keypress', function (event) {
+                    // 计数
+                    if(event.keyCode == '13') {
+                        let content = $(this).val();// console.log(content);
+                        tmp.push(content);
+                        if (tmp.length == 3) {
+                            // console.log(tmp);
+                            // console.log(num);
+                            count++;
+                            // console.log(count);
+                            let threadNow = new Thread(...tmp);
+                            arr.push(threadNow);
+                            if(count == num) {
+                            //    到这里的话就可以运行我们的主算法了
+                                arr.sort(function (m, n) {
+                                    return n.priority - m.priority;
+                                })
+                                // 得到正在运行时间片的按钮
+                                let runButton = $('#runButton');
+                                //  得到运行部分
+                                let running = $('#running');
+                                //  当前正在运行的
+                                // let now = arr.shift();
+                                //  当前正在运行的表格DOM
+                                runButton.click(function () {
+                                    if(arr.length) {
+                                        let now = arr.shift();
+                                        now.runtime += 1;
+                                        //  这里可以写就绪队列进程
+                                        let tr = ``;
+                                        arr.forEach(function (item) {
+                                                tr += `<tr>` + `<td>` + item.name + `</td>`
+                                                + `<td>` + item.state + `</td>`
+                                                + `<td>` + item.priority + `</td>`
+                                                + `<td>` + item.time + `</td>`
+                                                + `<td>` + item.runtime + `</td>`
+                                                + `</tr>`;
+                                        })
+                                        let tbody = $('#tableWaiting').find('tbody');
+                                        tbody.html(tr);
+                                        // console.log(now);
+                                        if(now.time >= now.runtime) {
+                                            now.state = 'Running';
+                                            let tr = `<tr>` + `<td>` + now.name + `</td>`
+                                            + `<td>` + now.state + `</td>`
+                                            + `<td>` + now.priority + `</td>`
+                                            + `<td>` + now.time + `</td>`
+                                            + `<td>` + now.runtime + `</td>`
+                                            + `</tr>`;
+                                            let num = $('#tableRunning').find('tbody').find('tr').length;
+                                            console.log(num);
+                                            if(num < 1) {
+                                                $('#tableRunning').append(tr);
+                                            }else {
+                                                $("#tableRunning tr:last").remove();
+                                                $('#tableRunning').append(tr);
+                                            }
+                                            //  避免切换进程时要重点
+                                            if(now.time != now.runtime) {
+                                                arr.unshift(now);
+                                            }
+                                        }
+                                    }else {
+                                        // let tr = `<tr>` + `<td>` + `</td>`
+                                        let tip = `<h4>无可运行进程</h4>`;
+                                        // runButton.html(tip);
+                                        runButton.html(tip);
+                                        runButton.attr('disabled', 'true');
+                                        // $("#tableRunning tr:last").remove();
+                                        // $('#tableRunning').find('tbody').html(`<tr>` + `<td>` + `None`
+                                        //     `</td>` + `<td>` + `None`
+                                        //     `</td>` + `<td>` + `None`
+                                        //     `</td>` + `<td>` + `None`
+                                        //     `</td>` + `<td>` + `None`
+                                        //     `</td>`);
+                                        $('#tableRunning').find('tbody').html('');
+                                    }
+
+                                })
+                                // while(arr.length) {
+                                // //    得到正在运行的进程
+                                //     let now = arr.shift();
+                                //     now.state = 'Running'
+                                //     while(now.time) {
+                                //
+                                //     }
+                                // }
+                                // console.log(arr);
+                            }
+                        }
+                    }
+                })
+                // console.log(arr);
+                // if(arr.length == 1) {
+                //     alert('成功了')
+                // }
+            })
+            // for(let i = 0; i < 3; i++) {
+            //     currentInput[i].bind('input', function (event) {
+            //         let content = currentInput[i].val;
+            //         tmp.push(content);
+            //     })
+            // }
+            // console.log(tmp);
+            // console.log(tmp);
+            //  读到3的时候才能去取
+            // if(tmp.length == 3) {
+            //     let threadNow = new Thread(...tmp);
+            //     // console.log(threadNow.priority);
+            //     arr.push(threadNow);
+            //     console.log(arr[0].priority);
+            // }
+        // console.log(arr[0].priority);
+        })
+        // console.log(arr[0]);
+        // for(let i = 0; i < threadLi.length; i++) {
+        //     let current = threadLi[i];
+        //     console.log(typeof current);
+        //     // let name = null;
+        //     // let priority = 0;
+        //     // let time = 0;
+        //     // let currentInput = current.children('input');
+        //     // let tmp = [];
+        //     // for(let i = 0; i < 3; i++) {
+        //     //     currentInput[i].bind('input', function (event) {
+        //     //         let content = currentInput[i].val;
+        //     //         tmp.push(content);
+        //     //     })
+        //     // }
+        //     // let threadNow = new Thread(...tmp);
+        //     // arr.push(threadNow);
+        // }
+        // for(let i = 0; i < num; i++) {
+        //     $(function(){
+        //         let current = $("ul li:nth-child(i)");
+        //         let name = null;
+        //         let priority = 0;
+        //         let time = 0;
+        //         let currentInput = current.children('input');
+        //         // 暂时存储input内容的容器
+        //         let tmp = [];
+        //         for(let i = 0; i < 3; i++) {
+        //             currentInput[i].bind('input', function (event) {
+        //                 let content = currentInput[i].val;
+        //                 tmp.push(content);
+        //             })
+        //         }
+        //         let threadNow = new Thread(...tmp);
+        //         arr.push(threadNow);
+        //     });
+        // }
+        // console.log(arr[0].priority);
+        // console.log(arr);
+        // threadInput.text(threadNum.val());
+        // console.log(threadNum.val())
+    });
+    // console.log(threadNum.val());
+    // threadInput.value = 'hehe';
+    // let threadNum = document.getElementById('threadNum');
+    // let threadInput = document.getElementById('threadInput');
+    // threadInput.innerHTML = threadNum.value;
+    // console.log(threadNum.value);
+</script>
+</body>
+</html>
